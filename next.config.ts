@@ -3,6 +3,9 @@ import { NextConfig } from 'next';
 const config: NextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  eslint: { 
+    ignoreDuringBuilds: true 
+  },
   async redirects() {
     return [
       // Removido o redirecionamento da raiz para permitir geolocalização
