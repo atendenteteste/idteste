@@ -22,7 +22,7 @@ interface Page {
   createdAt: string;
 }
 
-export default function LocalePage({ params }: { params: { locale: string } }) {
+export default function LocalePage({ params }: any) {
   // Create a ref for the hero image (show trigger when it scrolls out of view)
   const heroImageRef = useRef<HTMLImageElement>(null);
   // Create a ref for the FAQ section (hide trigger)

@@ -32,11 +32,7 @@ interface Product {
   createdAt: string;
 }
 
-export default function ProductPage({ 
-  params 
-}: { 
-  params: { locale: string; product: string } 
-}) {
+export default function ProductPage({ params }: any) {
   // Create a ref for the PhotoTutorial section (show trigger)
   const photoTutorialRef = useRef<HTMLElement>(null);
   // Create a ref for the FAQ section (hide trigger)
