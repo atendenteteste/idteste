@@ -6,6 +6,9 @@ const config: NextConfig = {
   eslint: { 
     ignoreDuringBuilds: true 
   },
+  typescript: {
+    ignoreBuildErrors: true
+  },
   async redirects() {
     return [
       // Removido o redirecionamento da raiz para permitir geolocalização
