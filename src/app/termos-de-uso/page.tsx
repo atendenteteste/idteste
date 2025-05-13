@@ -144,7 +144,7 @@ export default function TermosDeUso() {
       </main>
 
       {/* Footer próprio da página */}
-      <footer className="bg-gray-50 py-8 mt-8">
+      <footer className="bg-gray-50 py-8 border-t mt-8">
         <div className="max-w-3xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-4 px-4">
           {/* Logo à esquerda */}
           <Link href="/" className="flex items-center gap-2 order-1 md:order-none">

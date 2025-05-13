@@ -397,7 +397,7 @@ export default function Header() {
             
             {/* Language Selector no Mobile */}
             {!isLoading && pages.length > 0 && (
-              <div className="mt-6 border-t pt-4">
+              <div className="hidden">
                 <p className="px-4 text-sm font-medium text-gray-500 mb-2">Escolha o idioma</p>
                 <div className="space-y-2">
                   <Link 
@@ -426,7 +426,7 @@ export default function Header() {
       
       {/* Language Selector - Desktop - Float right fixed */}
       {!isLoading && pages.length > 0 && (
-        <div className="hidden md:block fixed top-4 right-4 z-50">
+        <div className="hidden">
           <div className="relative">
             <button 
               className="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900 bg-white py-1 px-3 rounded-full shadow-sm border border-gray-200"

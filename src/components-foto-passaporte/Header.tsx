@@ -414,7 +414,7 @@ export default function Header() {
 
       {/* Language Selector - Desktop - Float right fixed */}
       {!isLoading && pages.length > 0 && (
-        <div className="hidden md:block fixed top-4 right-4 z-50">
+        <div className="hidden">
           <div className="relative">
             <button 
               className="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900 bg-white py-1 px-3 rounded-full shadow-sm border border-gray-200"
