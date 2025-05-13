@@ -15,6 +15,10 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "PhotoID - Fotos profissionais para documentos",
   description: "Crie sua foto profissional para documentos em segundos usando IA",
+  icons: {
+    icon: '/images/icophotoid.ico',
+    shortcut: '/images/icophotoid.ico',
+  },
 };
 
 export default function RootLayout({

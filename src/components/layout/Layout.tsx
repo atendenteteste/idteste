@@ -6,7 +6,6 @@ import Footer from '../Footer';
 import LoadingOverlay from '../LoadingOverlay';
 import { useParams } from 'next/navigation';
 import { usePageContent } from '../../lib/hooks';
-import Head from 'next/head';
 
 interface LayoutProps {
   children: ReactNode;
@@ -35,9 +34,6 @@ export default function Layout({ children, hideHeader, hideFooter }: LayoutProps
   
   return (
     <div className="min-h-screen flex flex-col">
-      <Head>
-        <link rel="icon" href="/images/icophotoid.ico" />
-      </Head>
       <LoadingOverlay isLoading={isLoading} />
       {!hideHeader && <Header />}
       <main className="flex-grow">{children}</main>
