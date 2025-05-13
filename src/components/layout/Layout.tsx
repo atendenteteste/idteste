@@ -9,9 +9,11 @@ import { usePageContent } from '../../lib/hooks';
 
 interface LayoutProps {
   children: ReactNode;
+  hideHeader?: boolean;
+  hideFooter?: boolean;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, hideHeader, hideFooter }: LayoutProps) {
   const [isLoading, setIsLoading] = useState(true);
   const params = useParams();
   const locale = params?.locale as string || 'pt-br';
@@ -33,9 +35,9 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <LoadingOverlay isLoading={isLoading} />
-      <Header />
+      {!hideHeader && <Header />}
       <main className="flex-grow">{children}</main>
-      <Footer />
+      {!hideFooter && <Footer />}
     </div>
   );
 } 
