@@ -331,6 +331,32 @@ export default function EditProductPage() {
                                 )}
                               </>
                             )}
+
+                            {element.type === 'html' && (
+                              <>
+                                <textarea
+                                  value={value}
+                                  onChange={(e) => handleInputChange(element.id, e.target.value)}
+                                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm ${
+                                    isCustomized ? 'border-purple-400 bg-purple-50' : 'border-gray-200'
+                                  }`}
+                                  rows={25}
+                                  disabled={isLoading}
+                                  placeholder="Cole aqui o HTML completo do componente..."
+                                />
+                                <div className="mt-2 text-sm text-gray-500">
+                                  <span className="font-medium">Dica:</span> Você pode editar todo o HTML do componente aqui. Use as classes CSS do Tailwind para estilização.
+                                </div>
+                                {defaultValue && (
+                                  <details className="mt-3">
+                                    <summary className="text-sm text-gray-500 cursor-pointer font-medium">Ver valor padrão</summary>
+                                    <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-40">
+                                      {defaultValue}
+                                    </div>
+                                  </details>
+                                )}
+                              </>
+                            )}
                             
                             {element.type === 'link' && (
                               <>
