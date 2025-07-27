@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPageContentCustomizations, getDefaultPageContent, getDefaultProductContent, ContentCustomization, getProductContentCustomizations, getProductContentCustomizationsBySlug } from './supabase';
+import { getPageContentCustomizations, getDefaultPageContent, getDefaultProductContent, ContentCustomization, getProductContentCustomizations, getProductContentCustomizationsBySlug, getProductBySlug } from './supabase';
 
 type ContentRecord = Record<string, Record<string, string>>;
 
@@ -100,6 +100,9 @@ export function useProductContent(productSlug: string) {
         // Get locale from URL
         const locale = getLocale();
         
+        // Get product data to check for custom product image
+        const productData = await getProductBySlug(productSlug, locale);
+        
         // Get customizations from Supabase using the product slug and page slug (locale)
         const customizations = await getProductContentCustomizationsBySlug(productSlug, locale);
         
@@ -115,6 +118,14 @@ export function useProductContent(productSlug: string) {
           
           customizedContent[component][element_id] = custom_value;
         });
+        
+        // If product has a custom image, override the default productImage in HeroSection
+        if (productData?.product_image) {
+          if (!customizedContent.HeroSection) {
+            customizedContent.HeroSection = {};
+          }
+          customizedContent.HeroSection.productImage = productData.product_image;
+        }
         
         // Cache the content for future use
         productContentCache[productSlug] = customizedContent;

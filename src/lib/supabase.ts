@@ -356,7 +356,8 @@ export function getAvailableComponents() {
       { id: 'secondaryButton', type: 'button', name: 'Botão Secundário' },
       { id: 'secondaryButtonLink', type: 'link', name: 'Link do Botão Secundário' },
       { id: 'ratingText', type: 'text', name: 'Texto de Avaliação' },
-      { id: 'usersText', type: 'text', name: 'Texto de Usuários' }
+      { id: 'usersText', type: 'text', name: 'Texto de Usuários' },
+      { id: 'productImage', type: 'image', name: 'Imagem do Produto' }
     ]},
     { id: 'Header', name: 'Header', elements: [
       { id: 'howItWorksText', type: 'text', name: 'Texto Como Funciona' },
@@ -754,7 +755,8 @@ export function getDefaultProductContent() {
       secondaryButton: 'Faça o upload da sua imagem',
       secondaryButtonLink: '/upload',
       ratingText: '4.9 (6.493 avaliações)',
-      usersText: 'Mais de 200 mil usuários satisfeitos'
+      usersText: 'Mais de 200 mil usuários satisfeitos',
+      productImage: '/images/passaportebrasil.png' // Nova imagem do produto
     },
     Header: {
       howItWorksText: 'Como funciona?',
@@ -971,6 +973,117 @@ export function getDefaultProductContent() {
       link2Url: '/privacidade'
     }
   };
+}
+
+// Função para fazer upload de imagem para o Supabase Storage
+export async function uploadProductImage(file: File, productId: string): Promise<string | null> {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${productId}_${Date.now()}.${fileExt}`;
+    const filePath = `product-images/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      return null;
+    }
+
+    // Retornar a URL pública da imagem
+    const { data: publicData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return publicData.publicUrl;
+  } catch (error) {
+    console.error('Erro no upload:', error);
+    return null;
+  }
+}
+
+// Função para listar imagens do bucket product-image
+export async function listProductImages(): Promise<Array<{name: string, url: string}>> {
+  try {
+    console.log('Tentando listar imagens do bucket product-image...');
+    
+    const { data, error } = await supabase.storage
+      .from('product-image')
+      .list('', {
+        limit: 100,
+        offset: 0
+      });
+
+    if (error) {
+      console.error('Erro ao listar imagens:', error);
+      return [];
+    }
+
+    console.log('Dados recebidos do bucket:', data);
+
+    // Filtrar apenas arquivos de imagem e converter para URLs públicas
+    const images = data
+      .filter(file => {
+        const isImage = file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        return isImage && file.name !== '.emptyFolderPlaceholder';
+      })
+      .map(file => {
+        const { data: publicData } = supabase.storage
+          .from('product-image')
+          .getPublicUrl(file.name);
+        
+        return {
+          name: file.name,
+          url: publicData.publicUrl
+        };
+      });
+
+    console.log('Imagens processadas:', images);
+    return images;
+  } catch (error) {
+    console.error('Erro ao listar imagens:', error);
+    return [];
+  }
+}
+
+// Função para salvar imagem do produto no banco de dados
+export async function saveProductImage(productId: string, imageUrl: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({ product_image: imageUrl })
+      .eq('id', productId);
+
+    if (error) {
+      console.error('Erro ao salvar imagem do produto:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar imagem do produto:', error);
+    return false;
+  }
+}
+
+// Função para deletar imagem do produto
+export async function deleteProductImage(imagePath: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.storage
+      .from('product-images')
+      .remove([imagePath]);
+
+    if (error) {
+      console.error('Erro ao deletar imagem:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error);
+    return false;
+  }
 }
 
 // Buscar um produto pelo slug e página

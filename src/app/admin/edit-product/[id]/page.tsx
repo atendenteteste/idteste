@@ -8,7 +8,9 @@ import {
   getProductContentCustomizations, 
   saveContentCustomization, 
   getAvailableProductComponents, 
-  getDefaultProductContent
+  getDefaultProductContent,
+  listProductImages,
+  saveProductImage
 } from '../../../../lib/supabase';
 
 export default function EditProductPage() {
@@ -27,6 +29,8 @@ export default function EditProductPage() {
   const [selectedComponent, setSelectedComponent] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [defaultContent, setDefaultContent] = useState<any>({});
+  const [availableImages, setAvailableImages] = useState<Array<{name: string, url: string}>>([]);
+  const [selectedProductImage, setSelectedProductImage] = useState<string>('');
 
   // Verificar autenticação ao carregar
   useEffect(() => {
@@ -60,6 +64,9 @@ export default function EditProductPage() {
       
       setProductDetails(productData);
       
+      // Definir imagem do produto selecionada
+      setSelectedProductImage(productData.product_image || '');
+      
       // Buscar informações da página a que o produto pertence
       if (productData.page_id) {
         const { data: pageData, error: pageError } = await supabase
@@ -86,6 +93,12 @@ export default function EditProductPage() {
       // Obter conteúdo padrão
       const defaultContentData = getDefaultProductContent();
       setDefaultContent(defaultContentData);
+      
+             // Carregar imagens disponíveis do bucket
+       console.log('Chamando listProductImages...');
+       const imagesData = await listProductImages();
+       console.log('Imagens recebidas na página:', imagesData);
+       setAvailableImages(imagesData);
       
       // Se já existe um componente selecionado, carregar seus valores
       if (componentsData.length > 0) {
@@ -205,6 +218,126 @@ export default function EditProductPage() {
     }
   };
 
+  // Selecionar imagem do produto
+  const handleSelectProductImage = async (imageUrl: string) => {
+    setIsLoading(true);
+    setError('');
+    setMessage('');
+    
+    try {
+      const success = await saveProductImage(productId, imageUrl);
+      
+      if (success) {
+        setSelectedProductImage(imageUrl);
+        setMessage('Imagem do produto atualizada com sucesso!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setError('Erro ao salvar imagem do produto');
+      }
+    } catch (err: any) {
+      console.error('Erro ao selecionar imagem:', err);
+      setError(err.message || 'Erro ao selecionar imagem');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Upload de nova imagem
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    // Validar tamanho do arquivo (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('O arquivo deve ter no máximo 5MB');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      // Upload para o bucket
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('product-image')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Erro no upload:', error);
+        setError('Erro ao fazer upload da imagem');
+        return;
+      }
+
+      // Recarregar lista de imagens
+      const updatedImages = await listProductImages();
+      setAvailableImages(updatedImages);
+
+      setMessage('Imagem enviada com sucesso!');
+      setTimeout(() => setMessage(''), 3000);
+
+      // Limpar input
+      event.target.value = '';
+    } catch (err: any) {
+      console.error('Erro no upload:', err);
+      setError(err.message || 'Erro ao fazer upload da imagem');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Excluir imagem
+  const handleDeleteImage = async (imageName: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta imagem?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const { error } = await supabase.storage
+        .from('product-image')
+        .remove([imageName]);
+
+      if (error) {
+        console.error('Erro ao excluir:', error);
+        setError('Erro ao excluir a imagem');
+        return;
+      }
+
+      // Se a imagem excluída era a selecionada, limpar seleção
+      const imageUrl = availableImages.find(img => img.name === imageName)?.url;
+      if (imageUrl === selectedProductImage) {
+        setSelectedProductImage('');
+        // Limpar também do banco de dados
+        await saveProductImage(productId, '');
+      }
+
+      // Recarregar lista de imagens
+      const updatedImages = await listProductImages();
+      setAvailableImages(updatedImages);
+
+      setMessage('Imagem excluída com sucesso!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Erro ao excluir:', err);
+      setError(err.message || 'Erro ao excluir a imagem');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return null; // Redirecionando para /admin
   }
@@ -248,25 +381,95 @@ export default function EditProductPage() {
         
         {!isLoading && productDetails && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 md:col-span-1">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-100 pb-3">Componentes</h2>
-              <div className="space-y-2">
-                {availableComponents.map(component => (
-                  <button
-                    key={component.id}
-                    onClick={() => handleComponentChange(component.id)}
-                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
-                      selectedComponent === component.id
-                        ? 'text-white'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                    }`}
-                    style={selectedComponent === component.id ? { background: 'linear-gradient(to right, #6A0FDA, #B45DEB)' } : {}}
-                  >
-                    {component.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+                         <div className="space-y-6 md:col-span-1">
+               {/* Seção de Componentes */}
+               <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                 <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-100 pb-3">Componentes</h2>
+                 <div className="space-y-2">
+                   {availableComponents.map(component => (
+                     <button
+                       key={component.id}
+                       onClick={() => handleComponentChange(component.id)}
+                       className={`w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${
+                         selectedComponent === component.id
+                           ? 'text-white'
+                           : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                       }`}
+                       style={selectedComponent === component.id ? { background: 'linear-gradient(to right, #6A0FDA, #B45DEB)' } : {}}
+                     >
+                       {component.name}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+
+               {/* Seção de Imagem do Produto */}
+               <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                 <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+                   <h2 className="text-xl font-semibold text-gray-800">Imagem do Produto</h2>
+                   <div className="relative">
+                     <input
+                       type="file"
+                       accept="image/*"
+                       onChange={handleImageUpload}
+                       className="hidden"
+                       id="image-upload"
+                       disabled={isLoading}
+                     />
+                     <label
+                       htmlFor="image-upload"
+                       className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-700 text-white cursor-pointer transition-colors duration-200"
+                       title="Upload nova imagem"
+                     >
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                       </svg>
+                     </label>
+                   </div>
+                 </div>
+                                   <div className="space-y-3">
+                    {availableImages.map(image => (
+                      <div key={image.name} className="border border-gray-200 rounded-lg overflow-hidden relative">
+                        <button
+                          onClick={() => handleDeleteImage(image.name)}
+                          className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center z-10 transition-colors duration-200"
+                          title="Excluir imagem"
+                          disabled={isLoading}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        <img 
+                          src={image.url} 
+                          alt={image.name}
+                          className="w-full h-20 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleSelectProductImage(image.url)}
+                        />
+                        <div className="p-2 bg-gray-50">
+                          <div className="text-xs text-gray-600 truncate">{image.name}</div>
+                          <button
+                            onClick={() => handleSelectProductImage(image.url)}
+                            className={`mt-1 w-full px-2 py-1 text-xs rounded transition-colors duration-200 ${
+                              selectedProductImage === image.url
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                            disabled={isLoading}
+                          >
+                            {selectedProductImage === image.url ? 'Selecionada' : 'Selecionar'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                   {availableImages.length === 0 && (
+                     <div className="text-gray-500 text-sm text-center py-4">
+                       Nenhuma imagem encontrada no bucket
+                     </div>
+                   )}
+                 </div>
+               </div>
+             </div>
             
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 md:col-span-3">
               {selectedComponent && (

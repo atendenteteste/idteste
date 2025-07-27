@@ -1,12 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { usePageContent, useProductContent } from '../lib/hooks';
 
 export default function HeroSection() {
   // State to track if content is fully ready
   const [contentReady, setContentReady] = useState(false);
+  
+  // Create ref for the hero image
+  const heroImageRef = useRef<HTMLImageElement>(null);
   
   // Get the current locale from the URL
   const params = useParams();
@@ -29,7 +32,8 @@ export default function HeroSection() {
     secondaryButton: 'Faça o upload da sua imagem',
     secondaryButtonLink: '/upload',
     ratingText: '4.9 (6.493 avaliações)',
-    usersText: 'Mais de 200 mil usuários satisfeitos'
+    usersText: 'Mais de 200 mil usuários satisfeitos',
+    productImage: '/images/passaportebrasil.png'
   } : {
     ...pageContent?.HeroSection || {},
     ...productContent?.HeroSection || {}
@@ -112,12 +116,22 @@ export default function HeroSection() {
             
             {/* Mobile hero image after subtitle */}
             <div className="block md:hidden mt-4 mb-6" style={{ marginTop: '-30px' }}>
-              <div className="mx-auto" style={{ maxWidth: '384px', marginLeft: 'calc(50% - 172px)' }}>
+              <div className="mx-auto relative" style={{ maxWidth: '384px', marginLeft: 'calc(50% - 172px)' }}>
                 <img 
                   src="/images/foto1produto.png" 
                   alt="Person taking passport photo" 
                   className="w-full h-auto"
                 />
+                {/* Imagem do produto no canto inferior direito para mobile */}
+                {content.productImage && (
+                  <div className="absolute z-10" style={{ bottom: '8px', right: '68px' }}>
+                    <img 
+                      src={content.productImage} 
+                      alt="Product" 
+                      className="w-16 h-auto"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             
@@ -224,13 +238,27 @@ export default function HeroSection() {
             </div>
           </div>
           
+          {/* Desktop hero image */}
           <div className="hidden md:flex items-center justify-end h-full relative">
-            <img 
-              src="/images/foto1produto.png" 
-              alt="Person taking passport photo" 
-              className="h-full w-auto object-contain object-right"
-              style={{ position: 'absolute', left: '70px', bottom: 0, top: 0, transform: 'scale(1.2)' }}
-            />
+            <div className="relative w-full h-full">
+              <img 
+                ref={heroImageRef}
+                src="/images/foto1produto.png" 
+                alt="Person taking passport photo" 
+                className="h-full w-auto object-contain"
+                style={{ position: 'absolute', right: '0px', bottom: 0, top: 0 }}
+              />
+              {/* Imagem do produto no canto inferior direito */}
+              {content.productImage && (
+                <div className="absolute z-10" style={{ bottom: '136px', right: '126px' }}>
+                  <img 
+                    src={content.productImage} 
+                    alt="Product" 
+                    className="w-20 h-auto"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile ratings section */}

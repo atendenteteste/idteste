@@ -8,7 +8,8 @@ import {
   getPageContentCustomizations, 
   saveContentCustomization, 
   getAvailableComponents, 
-  getDefaultPageContent
+  getDefaultPageContent,
+  uploadProductImage
 } from '../../../../lib/supabase';
 
 export default function EditPagePage() {
@@ -26,6 +27,8 @@ export default function EditPagePage() {
   const [selectedComponent, setSelectedComponent] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [defaultContent, setDefaultContent] = useState<any>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Verificar autenticação ao carregar
   useEffect(() => {
@@ -116,6 +119,29 @@ export default function EditPagePage() {
       ...prev,
       [elementId]: value
     }));
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (elementId: string, file: File) => {
+    setUploadingImage(true);
+    try {
+      // Use the page ID for the product ID (since this is page editing)
+      const imageUrl = await uploadProductImage(file, pageDetails.id);
+      
+      if (imageUrl) {
+        handleInputChange(elementId, imageUrl);
+        setImagePreview(imageUrl);
+        setMessage('Imagem enviada com sucesso!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setError('Erro ao fazer upload da imagem');
+      }
+    } catch (err: any) {
+      console.error('Erro no upload:', err);
+      setError(err.message || 'Erro ao fazer upload da imagem');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   // Salvar customizações
@@ -359,6 +385,79 @@ export default function EditPagePage() {
                                     <span className="font-medium">Valor padrão:</span> {defaultValue}
                                   </div>
                                 )}
+                              </>
+                            )}
+
+                            {element.type === 'image' && (
+                              <>
+                                <div className="space-y-4">
+                                  {/* Input para URL da imagem */}
+                                  <input
+                                    type="text"
+                                    value={value}
+                                    onChange={(e) => handleInputChange(element.id, e.target.value)}
+                                    placeholder="URL da imagem ou faça upload abaixo"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                                      isCustomized ? 'border-purple-400 bg-purple-50' : 'border-gray-200'
+                                    }`}
+                                    disabled={isLoading || uploadingImage}
+                                  />
+                                  
+                                  {/* Upload de arquivo */}
+                                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                                    <div className="text-center">
+                                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                      </svg>
+                                      <div className="mt-4">
+                                        <label htmlFor={`file-upload-${element.id}`} className="cursor-pointer">
+                                          <span className="mt-2 block text-sm font-medium text-gray-900">
+                                            {uploadingImage ? 'Enviando...' : 'Clique para fazer upload ou arraste uma imagem'}
+                                          </span>
+                                          <input 
+                                            id={`file-upload-${element.id}`}
+                                            name={`file-upload-${element.id}`}
+                                            type="file" 
+                                            className="sr-only" 
+                                            accept="image/*"
+                                            disabled={uploadingImage || isLoading}
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) {
+                                                handleImageUpload(element.id, file);
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                        <p className="mt-1 text-xs text-gray-500">PNG, JPG, JPEG até 5MB</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Preview da imagem */}
+                                  {(value || imagePreview) && (
+                                    <div className="mt-4">
+                                      <div className="text-sm text-gray-500 mb-2">Prévia:</div>
+                                      <div className="w-32 h-32 border border-gray-200 rounded-lg overflow-hidden">
+                                        <img 
+                                          src={value || imagePreview || ''} 
+                                          alt="Preview" 
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {defaultValue && (
+                                    <div className="mt-2 text-sm text-gray-500">
+                                      <span className="font-medium">Valor padrão:</span> {defaultValue}
+                                    </div>
+                                  )}
+                                </div>
                               </>
                             )}
                           </div>
